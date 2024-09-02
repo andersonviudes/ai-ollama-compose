@@ -1,0 +1,58 @@
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+    volumes:
+      - ollama:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          cpus: '5'
+          memory: 4068M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    restart: always
+    container_name: ollama-webui
+    depends_on: 
+      - ollama
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - OLLAMA_BASE_URL=http://localhost:11434/
+      - TZ=America/Sao_Paulo
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1068M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
+    ports:
+      - "30000:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+    - ollama-webui:/app/backend/data
+
+volumes:
+  ollama:
+  ollama-webui:
